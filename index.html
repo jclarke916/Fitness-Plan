@@ -1,371 +1,191 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  CheckCircle, Dumbbell, TrendingUp, Target, 
-  Award, ChevronRight, Save, Loader2 
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Progressive Training Cycle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-// Move static data outside to optimize performance
-const WEEKS_DATA = {
-  1: {
-    title: "Week 1: Foundation",
-    subtitle: "Establish baseline with perfect form",
-    focus: "Learn movements, establish baseline, focus on form",
-    monday: {
-      title: "Full Body Strength",
-      exercises: [
-        { name: "Squats", sets: "4x8-10", notes: "Focus on depth" },
-        { name: "Deadlifts", sets: "4x8-10", notes: "Neutral spine" },
-        { name: "Bench Press", sets: "4x8-10", notes: "Control descent" },
-        { name: "Rows", sets: "3x12", notes: "Squeeze blades" },
-        { name: "Overhead Press", sets: "3x10", notes: "Core tight" },
-        { name: "Pull-ups", sets: "3x10", notes: "Full ROM" }
-      ],
-      finisher: "15 min Zone 2 cardio + core circuit"
-    },
-    tuesday: "Marcus Reaves Boxing - Follow program",
-    wednesday: "Club Studio Class (Reform/CS4/Boxing)",
-    thursday: "Marcus Reaves Boxing - Compare to Tue",
-    friday: "Yoga - Full recovery and mobility",
-    saturday: "Long Zone 2 Cardio - 60-90 min family activity",
-    sunday: "Gentle Movement - 30 min walk/stretch",
-    endOfWeek: [
-      "Log all Monday lift numbers",
-      "Note how Marcus's sessions felt",
-      "Compare boxing performance",
-      "Assess recovery and sleep",
-      "Partner Check-in: What worked?"
-    ]
-  },
-  2: {
-    title: "Week 2: Progression",
-    subtitle: "Increase weight or reps from Week 1",
-    focus: "Apply progressive overload principles",
-    monday: {
-      title: "Full Body - PROGRESSIVE",
-      exercises: [
-        { name: "Squats", sets: "4x8-10", notes: "Hit 10 reps? +5lbs. Hit 8? +2.5lbs" },
-        { name: "Deadlifts", sets: "4x8-10", notes: "Same progression rules apply" },
-        { name: "Bench Press", sets: "4x8-10", notes: "Small weight jumps only" },
-        { name: "Rows", sets: "3x12", notes: "If 12 was easy, add 2.5-5lbs" },
-        { name: "Overhead Press", sets: "3x10-12", notes: "Hardest to progress; be patient" },
-        { name: "Pull-ups", sets: "3x10-12", notes: "Reduce assistance or add weight" }
-      ],
-      finisher: "15 min Zone 2 + core (add 1 exercise)"
-    },
-    tuesday: "Marcus Reaves Boxing - Intensity up",
-    wednesday: "Club Studio Class - Try something new",
-    thursday: "Marcus Reaves Boxing - Feel the strength",
-    friday: "Yoga - Recovery focus",
-    saturday: "Long Zone 2 - Add 15 mins",
-    sunday: "Gentle Movement - Active recovery",
-    endOfWeek: ["Compare W2 to W1", "Check energy levels", "Quantify boxing intensity"]
-  },
-  3: {
-    title: "Week 3: Peak Volume",
-    subtitle: "Push boundaries safely",
-    focus: "Maximum intensity before deload",
-    monday: {
-      title: "Full Body - VOLUME UP",
-      exercises: [
-        { name: "Squats", sets: "5x8", notes: "Added a 5th set today" },
-        { name: "Deadlifts", sets: "4x8-10", notes: "Keep pushing weight" },
-        { name: "Bench Press", sets: "4x8-10 + Drop", notes: "Final set: -20% wt to failure" },
-        { name: "Rows", sets: "4x12", notes: "Added 1 set for back volume" },
-        { name: "Overhead Press", sets: "3x10-12", notes: "Focus on lockout" },
-        { name: "Pull-ups", sets: "4x10", notes: "Added 1 set" }
-      ],
-      finisher: "20 min Zone 2 + advanced core"
-    },
-    tuesday: "Boxing - Test your limits",
-    wednesday: "Club Studio - Friendly competition",
-    thursday: "Boxing - Mental toughness focus",
-    friday: "Yoga - Critical recovery",
-    saturday: "Long Zone 2 - 75-90 min",
-    sunday: "Gentle Movement - Prep for deload",
-    endOfWeek: ["Quantify gains vs W1", "Evaluate fueling/nutrition", "Prepare for deload"]
-  },
-  4: {
-    title: "Week 4: Deload",
-    subtitle: "Recover to grow stronger",
-    focus: "Strategic recovery and form consolidation",
-    monday: {
-      title: "Full Body - DELOAD (70%)",
-      exercises: [
-        { name: "Squats", sets: "3x8 @ 70%", notes: "Should feel very easy" },
-        { name: "Deadlifts", sets: "3x8 @ 70%", notes: "Perfect form only" },
-        { name: "Bench Press", sets: "3x8 @ 70%", notes: "Focus on bar path" },
-        { name: "Rows", sets: "3x10 @ 70%", notes: "Focus on contraction" },
-        { name: "Overhead Press", sets: "2x10 @ 70%", notes: "Reduced volume" },
-        { name: "Pull-ups", sets: "3x8 Easy", notes: "Leave reps in the tank" }
-      ],
-      finisher: "10 min easy cardio + stretch"
-    },
-    tuesday: "Boxing - Technical focus",
-    wednesday: "Club Studio - Low intensity (Reform)",
-    thursday: "Boxing - Technique > Power",
-    friday: "Yoga - Deep recovery",
-    saturday: "Zone 2 - 45 min conversational",
-    sunday: "Total Rest - Prep for next block",
-    endOfWeek: ["Body feel assessment", "Compare deload wt to W1 base", "Plan next 4-week block"]
-  }
-};
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-const ProgressiveFitnessPlan = () => {
-  const [selectedWeek, setSelectedWeek] = useState(1);
-  const [activeGender, setActiveGender] = useState('his'); // For mobile toggle
-  const [isLoading, setIsLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState('');
-  
-  const [week1Data, setWeek1Data] = useState({
-    his: { squats: { weight: '', reps: '' }, deadlifts: { weight: '', reps: '' }, bench: { weight: '', reps: '' }, rows: { weight: '', reps: '' }, overhead: { weight: '', reps: '' }, pullups: { weight: '', reps: '' } },
-    hers: { squats: { weight: '', reps: '' }, deadlifts: { weight: '', reps: '' }, bench: { weight: '', reps: '' }, rows: { weight: '', reps: '' }, overhead: { weight: '', reps: '' }, pullups: { weight: '', reps: '' } }
-  });
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        let savedData;
-        if (window.storage?.get) {
-          const result = await window.storage.get('workout-week1-data', false);
-          if (result?.value) savedData = JSON.parse(result.value);
-        } else {
-          const local = localStorage.getItem('workout-week1-data');
-          if (local) savedData = JSON.parse(local);
-        }
-        if (savedData) setWeek1Data(savedData);
-      } catch (e) {
-        console.error('Load error', e);
-      } finally {
-        setIsLoading(false);
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-100">
+  <div id="root"></div>
+
+  <script type="text/javascript">
+    const { useState, useEffect } = React;
+
+    const WEEKS_DATA = {
+      1: {
+        title: "Week 1: Foundation",
+        subtitle: "Learn the movements & log your baseline",
+        focus: "Perfect form and consistency",
+        monday: {
+          title: "Full Body Strength",
+          exercises: [
+            { name: "Squats", sets: "4x8–10", notes: "Comfortable depth" },
+            { name: "Deadlifts", sets: "4x8–10", notes: "Neutral spine" },
+            { name: "Bench Press", sets: "4x8–10", notes: "Controlled tempo" },
+            { name: "Rows", sets: "3x12", notes: "Squeeze shoulder blades" },
+            { name: "Overhead Press", sets: "3x10", notes: "Brace core" },
+            { name: "Pull-ups", sets: "3x10", notes: "Full range" }
+          ],
+          finisher: "15 min easy cardio + light core"
+        },
+        tuesday: "Boxing",
+        wednesday: "Studio Class",
+        thursday: "Boxing",
+        friday: "Yoga",
+        saturday: "Zone 2 Cardio (60 min)",
+        sunday: "Light walk or stretch",
+        endOfWeek: ["Log weights", "Note energy", "Sleep & recovery check"]
+      },
+      2: {
+        title: "Week 2: Build",
+        subtitle: "Slightly heavier than last week",
+        focus: "Progress slowly",
+        monday: {
+          title: "Full Body Strength",
+          exercises: [
+            { name: "Squats", sets: "4x8–10", notes: "Add small weight if ready" },
+            { name: "Deadlifts", sets: "4x8–10", notes: "Same form" },
+            { name: "Bench Press", sets: "4x8–10", notes: "Small jumps only" },
+            { name: "Rows", sets: "3x12", notes: "Controlled reps" },
+            { name: "Overhead Press", sets: "3x10–12", notes: "Be patient" },
+            { name: "Pull-ups", sets: "3x10–12", notes: "Reduce assistance" }
+          ],
+          finisher: "15 min cardio + core"
+        },
+        tuesday: "Boxing",
+        wednesday: "Studio",
+        thursday: "Boxing",
+        friday: "Yoga",
+        saturday: "Zone 2 (75 min)",
+        sunday: "Active recovery",
+        endOfWeek: ["Compare to Week 1", "Adjust food intake"]
+      },
+      3: {
+        title: "Week 3: Push",
+        subtitle: "Your hardest week",
+        focus: "Effort with control",
+        monday: {
+          title: "Full Body Strength",
+          exercises: [
+            { name: "Squats", sets: "5x8", notes: "Extra set" },
+            { name: "Deadlifts", sets: "4x8–10", notes: "Strong reps" },
+            { name: "Bench Press", sets: "4x8 + drop", notes: "One burnout set" },
+            { name: "Rows", sets: "4x12", notes: "Back volume" },
+            { name: "Overhead Press", sets: "3x10–12", notes: "Lockout focus" },
+            { name: "Pull-ups", sets: "4x10", notes: "Extra set" }
+          ],
+          finisher: "20 min cardio"
+        },
+        tuesday: "Boxing",
+        wednesday: "Studio",
+        thursday: "Boxing",
+        friday: "Yoga",
+        saturday: "Zone 2 (90 min)",
+        sunday: "Light movement",
+        endOfWeek: ["Note best lifts", "Prep for recovery"]
+      },
+      4: {
+        title: "Week 4: Recover",
+        subtitle: "Lighter weights on purpose",
+        focus: "Heal & reset",
+        monday: {
+          title: "Deload Full Body",
+          exercises: [
+            { name: "Squats", sets: "3x8 @ 70%", notes: "Easy" },
+            { name: "Deadlifts", sets: "3x8 @ 70%", notes: "Perfect form" },
+            { name: "Bench Press", sets: "3x8 @ 70%", notes: "Smooth reps" }
+          ],
+          finisher: "Stretch & walk"
+        },
+        tuesday: "Technical Boxing",
+        wednesday: "Light Studio",
+        thursday: "Technique focus",
+        friday: "Yoga",
+        saturday: "Zone 2 (45 min)",
+        sunday: "Full rest",
+        endOfWeek: ["How does your body feel?", "Plan next cycle"]
       }
     };
-    loadData();
-  }, []);
 
-  const handleSaveData = async () => {
-    setSaveStatus('Saving...');
-    try {
-      const dataStr = JSON.stringify(week1Data);
-      if (window.storage?.set) {
-        await window.storage.set('workout-week1-data', dataStr, false);
-      } else {
-        localStorage.setItem('workout-week1-data', dataStr);
-      }
-      setSaveStatus('✓ Saved!');
-      setTimeout(() => setSaveStatus(''), 2000);
-    } catch (e) {
-      setSaveStatus('⚠ Error');
-    }
-  };
+    function App() {
+      const [week, setWeek] = useState(1);
+      const [data, setData] = useState(() =>
+        JSON.parse(localStorage.getItem("baseline")) || {
+          athlete1: {},
+          athlete2: {}
+        }
+      );
 
-  const calculateProgression = (weight, reps) => {
-    const w = parseFloat(weight) || 0;
-    const r = parseInt(reps) || 0;
-    if (r >= 10) return { weight: w + 5, reps: 8, note: "+5lbs, 8 reps" };
-    if (r >= 8) return { weight: w + 2.5, reps: r, note: "+2.5lbs, same reps" };
-    return { weight: w, reps: r + 2, note: "Same weight, +2 reps" };
-  };
+      useEffect(() => {
+        localStorage.setItem("baseline", JSON.stringify(data));
+      }, [data]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-        <Loader2 className="text-blue-500 animate-spin" size={48} />
-      </div>
-    );
-  }
+      const current = WEEKS_DATA[week];
 
-  const currentWeek = WEEKS_DATA[selectedWeek];
+      return (
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
+          <h1 className="text-3xl font-bold">Training Cycle</h1>
 
-  return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-6 bg-slate-900 text-slate-100 min-h-screen pb-20">
-      {/* Header */}
-      <header className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="text-green-400" size={32} />
-          <h1 className="text-2xl md:text-3xl font-bold leading-tight">Training Cycle</h1>
-        </div>
-        
-        {saveStatus && (
-          <div className="fixed top-4 right-4 z-50 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg animate-bounce">
-            {saveStatus}
-          </div>
-        )}
-
-        {/* Week Selector - Scrollable on mobile */}
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {[1, 2, 3, 4].map(w => (
-            <button
-              key={w}
-              onClick={() => setSelectedWeek(w)}
-              className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold transition-all ${
-                selectedWeek === w ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
-              }`}
-            >
-              W{w}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* Week Overview Card */}
-      <section className="bg-gradient-to-br from-blue-900/40 to-slate-800 border border-blue-500/30 rounded-2xl p-5 mb-6">
-        <h2 className="text-xl font-bold mb-1">{currentWeek.title}</h2>
-        <p className="text-blue-300 text-sm mb-3">{currentWeek.subtitle}</p>
-        <div className="flex items-center gap-2 text-xs bg-blue-500/10 p-2 rounded-lg">
-          <Target size={14} className="text-blue-400" />
-          <span><strong>Focus:</strong> {currentWeek.focus}</span>
-        </div>
-      </section>
-
-      {/* Baseline Data Entry (Week 1 only) */}
-      {selectedWeek === 1 && (
-        <section className="space-y-4 mb-8">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold flex items-center gap-2"><Dumbbell size={18}/> Log Baseline</h3>
-            <button onClick={handleSaveData} className="flex items-center gap-2 bg-green-600 px-4 py-2 rounded-lg text-sm font-bold active:scale-95 transition-transform">
-              <Save size={16}/> Save
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {['his', 'hers'].map(gender => (
-              <div key={gender} className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                <h4 className={`capitalize font-bold mb-4 ${gender === 'his' ? 'text-blue-400' : 'text-purple-400'}`}>
-                  {gender}'s Starting Stats
-                </h4>
-                <div className="space-y-4">
-                  {Object.keys(week1Data[gender]).map(ex => (
-                    <div key={ex}>
-                      <label className="text-xs text-slate-400 block mb-1 capitalize">{ex}</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          placeholder="lbs"
-                          className="w-full bg-slate-900 border border-slate-700 p-2 rounded-lg focus:ring-2 ring-blue-500 outline-none"
-                          value={week1Data[gender][ex].weight}
-                          onChange={(e) => {
-                            const newData = {...week1Data};
-                            newData[gender][ex].weight = e.target.value;
-                            setWeek1Data(newData);
-                          }}
-                        />
-                        <input
-                          type="number"
-                          placeholder="reps"
-                          className="w-24 bg-slate-900 border border-slate-700 p-2 rounded-lg focus:ring-2 ring-blue-500 outline-none"
-                          value={week1Data[gender][ex].reps}
-                          onChange={(e) => {
-                            const newData = {...week1Data};
-                            newData[gender][ex].reps = e.target.value;
-                            setWeek1Data(newData);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Targets (Week 2, 3, 4) */}
-      {selectedWeek > 1 && (
-        <section className="mb-8">
-          <h3 className="font-bold mb-4 flex items-center gap-2"><TrendingUp size={18}/> Your Targets</h3>
-          
-          {/* Mobile Gender Toggle */}
-          <div className="flex md:hidden bg-slate-800 p-1 rounded-xl mb-4">
-            {['his', 'hers'].map(g => (
+          <div className="flex gap-2">
+            {[1,2,3,4].map(w => (
               <button
-                key={g}
-                onClick={() => setActiveGender(g)}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize ${activeGender === g ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}
+                key={w}
+                onClick={() => setWeek(w)}
+                className={`flex-1 py-2 rounded-xl font-bold ${
+                  week === w ? "bg-blue-600" : "bg-slate-700"
+                }`}
               >
-                {g}
+                Week {w}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {['his', 'hers'].map(gender => (
-              <div key={gender} className={`md:block ${activeGender === gender ? 'block' : 'hidden'} bg-slate-800/30 p-4 rounded-2xl border border-slate-700`}>
-                <h4 className={`capitalize font-bold mb-3 ${gender === 'his' ? 'text-blue-400' : 'text-purple-400'}`}>{gender}'s Targets</h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.entries(week1Data[gender]).map(([ex, data]) => {
-                    if (!data.weight) return null;
-                    const prog = calculateProgression(data.weight, data.reps);
-                    const multiplier = selectedWeek === 4 ? 0.7 : 1;
-                    return (
-                      <div key={ex} className="flex justify-between items-center bg-slate-900/50 p-3 rounded-xl border border-slate-800">
-                        <span className="capitalize text-sm font-medium">{ex}</span>
-                        <div className="text-right">
-                          <div className="font-bold text-white">{Math.round(prog.weight * multiplier)} lbs x {prog.reps}</div>
-                          <div className="text-[10px] text-slate-500 italic">{selectedWeek === 4 ? 'DELOAD' : prog.note}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <div className="bg-slate-800 p-4 rounded-xl">
+            <h2 className="text-xl font-bold">{current.title}</h2>
+            <p className="text-slate-400">{current.subtitle}</p>
+            <p className="text-sm mt-2"><strong>Focus:</strong> {current.focus}</p>
+          </div>
+
+          <div className="bg-slate-800 p-4 rounded-xl">
+            <h3 className="font-bold mb-3">Monday – {current.monday.title}</h3>
+            {current.monday.exercises.map((ex, i) => (
+              <div key={i} className="bg-slate-900 p-3 rounded-lg mb-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">{ex.name}</span>
+                  <span className="text-blue-400">{ex.sets}</span>
                 </div>
+                <p className="text-xs text-slate-400">{ex.notes}</p>
               </div>
             ))}
+            <p className="text-xs mt-2 text-orange-300">
+              <strong>Finisher:</strong> {current.monday.finisher}
+            </p>
           </div>
-        </section>
-      )}
 
-      {/* Workout Content */}
-      <div className="space-y-6">
-        <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl">
-          <h3 className="font-bold text-red-400 mb-4 uppercase tracking-wider text-sm">Monday: {currentWeek.monday.title}</h3>
-          <div className="space-y-3">
-            {currentWeek.monday.exercises.map((ex, i) => (
-              <div key={i} className="flex flex-col p-3 rounded-xl bg-slate-900/50 border border-slate-700/50">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-bold">{ex.name}</span>
-                  <span className="text-blue-400 font-mono text-sm">{ex.sets}</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{ex.notes}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-xs text-orange-200">
-            <strong>Finisher:</strong> {currentWeek.monday.finisher}
+          <div className="bg-slate-800 p-4 rounded-xl">
+            <h3 className="font-bold mb-2">Weekly Review</h3>
+            <ul className="list-disc list-inside text-sm text-slate-300">
+              {current.endOfWeek.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
           </div>
         </div>
+      );
+    }
 
-        {/* Schedule Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { day: 'Tue', title: 'Boxing', content: currentWeek.tuesday },
-            { day: 'Wed', title: 'Studio', content: currentWeek.wednesday },
-            { day: 'Thu', title: 'Boxing', content: currentWeek.thursday },
-            { day: 'Fri', title: 'Yoga', content: currentWeek.friday },
-            { day: 'Sat', title: 'Cardio', content: currentWeek.saturday },
-            { day: 'Sun', title: 'Rest', content: currentWeek.sunday },
-          ].map(d => (
-            <div key={d.day} className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-              <div className="text-[10px] font-bold text-blue-500 uppercase mb-1">{d.day} • {d.title}</div>
-              <p className="text-sm text-slate-300">{d.content}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Review Checklist */}
-        <div className="p-5 bg-gradient-to-br from-purple-900/40 to-slate-800 border border-purple-500/30 rounded-2xl">
-          <h3 className="font-bold mb-4 flex items-center gap-2"><Award size={18} className="text-purple-400"/> Week Review</h3>
-          <ul className="space-y-3">
-            {currentWeek.endOfWeek.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
-                <div className="mt-1 shrink-0"><CheckCircle size={14} className="text-purple-500"/></div>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ProgressiveFitnessPlan;
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
