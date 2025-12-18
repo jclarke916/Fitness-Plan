@@ -15,143 +15,200 @@
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-
 <body class="bg-slate-900 text-slate-100">
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+<div id="root"></div>
 
-    const WEEKS = {
-      1: {
-        title: "Week 1: Foundation",
-        monday: ["Squats", "Deadlifts", "Bench Press"],
-        tuesday: "Boxing",
-        wednesday: "Studio",
-        thursday: "Boxing",
-        friday: "Yoga",
-        saturday: "Zone 2 Cardio",
-        sunday: "Rest"
-      },
-      2: {
-        title: "Week 2: Build",
-        monday: ["Squats", "Deadlifts", "Bench Press"],
-        tuesday: "Boxing",
-        wednesday: "Studio",
-        thursday: "Boxing",
-        friday: "Yoga",
-        saturday: "Long Cardio",
-        sunday: "Rest"
-      },
-      3: {
-        title: "Week 3: Push",
-        monday: ["Squats", "Deadlifts", "Bench Press"],
-        tuesday: "Boxing",
-        wednesday: "Studio",
-        thursday: "Boxing",
-        friday: "Yoga",
-        saturday: "Peak Cardio",
-        sunday: "Rest"
-      },
-      4: {
-        title: "Week 4: Recover",
-        monday: ["Squats (Light)", "Deadlifts (Light)", "Bench (Light)"],
-        tuesday: "Technical Boxing",
-        wednesday: "Light Studio",
-        thursday: "Technique",
-        friday: "Yoga",
-        saturday: "Easy Cardio",
-        sunday: "Full Rest"
-      }
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Main weekly data (can expand exercises later)
+const WEEKS_DATA = {
+  1: {
+    title: "Week 1: Foundation",
+    monday: [
+      { name: "Squats", sets: "4x8–10", notes: "Focus on depth" },
+      { name: "Deadlifts", sets: "4x8–10", notes: "Neutral spine" },
+      { name: "Bench Press", sets: "4x8–10", notes: "Control descent" },
+      { name: "Rows", sets: "3x12", notes: "Squeeze blades" },
+      { name: "Overhead Press", sets: "3x10", notes: "Core tight" },
+      { name: "Pull-ups", sets: "3x10", notes: "Full ROM" },
+    ],
+    tuesday: "Boxing",
+    wednesday: "Studio",
+    thursday: "Boxing",
+    friday: "Yoga",
+    saturday: "Cardio",
+    sunday: "Rest"
+  },
+  2: { title: "Week 2: Progression", monday: [], tuesday:"Boxing", wednesday:"Studio", thursday:"Boxing", friday:"Yoga", saturday:"Cardio", sunday:"Rest" },
+  3: { title: "Week 3: Peak Volume", monday: [], tuesday:"Boxing", wednesday:"Studio", thursday:"Boxing", friday:"Yoga", saturday:"Cardio", sunday:"Rest" },
+  4: { title: "Week 4: Deload", monday: [], tuesday:"Boxing", wednesday:"Studio", thursday:"Boxing", friday:"Yoga", saturday:"Cardio", sunday:"Rest" },
+};
+
+const LIFTS = ["squats","deadlifts","bench","rows","overhead","pullups"];
+
+function App() {
+  const [week, setWeek] = useState(1);
+  const [activeGender, setActiveGender] = useState("his");
+  const [baseline, setBaseline] = useState(() => {
+    return JSON.parse(localStorage.getItem("baseline")) || {
+      his: LIFTS.reduce((acc,lift)=>({...acc,[lift]:{weight:"",reps:""}}),{}),
+      hers: LIFTS.reduce((acc,lift)=>({...acc,[lift]:{weight:"",reps:""}}),{})
     };
+  });
+  const [saveStatus, setSaveStatus] = useState("");
 
-    function App() {
-      const [week, setWeek] = useState(1);
-      const [baseline, setBaseline] = useState(() => {
-        return JSON.parse(localStorage.getItem("baseline")) || {
-          squats: "",
-          deadlifts: "",
-          bench: ""
-        };
-      });
+  useEffect(()=>{
+    localStorage.setItem("baseline", JSON.stringify(baseline));
+  },[baseline]);
 
-      useEffect(() => {
-        localStorage.setItem("baseline", JSON.stringify(baseline));
-      }, [baseline]);
+  const handleSave = () => {
+    localStorage.setItem("baseline", JSON.stringify(baseline));
+    setSaveStatus("✓ Saved!");
+    setTimeout(()=>setSaveStatus(""),2000);
+  };
 
-      const data = WEEKS[week];
+  // Calculate progression for Week 2-3
+  const calculateProgression = (weight,reps) => {
+    const w = parseFloat(weight)||0;
+    const r = parseInt(reps)||0;
+    if(r>=10) return { weight:w+5, reps:8, note:"+5 lbs, 8 reps" };
+    if(r>=8) return { weight:w+2.5, reps:r, note:"+2.5 lbs" };
+    return { weight:w, reps:r+2, note:"Same weight +2 reps" };
+  };
 
-      return (
-        <div className="max-w-3xl mx-auto p-6 space-y-6">
+  // Deload multiplier
+  const multiplier = week===4?0.7:1;
 
-          <h1 className="text-3xl font-bold">Training Cycle</h1>
+  const currentWeek = WEEKS_DATA[week];
 
-          {/* Week Selector */}
-          <div className="flex gap-2">
-            {[1,2,3,4].map(w => (
-              <button
-                key={w}
-                onClick={() => setWeek(w)}
-                className={`flex-1 py-2 rounded-xl font-bold ${
-                  week === w ? "bg-blue-600" : "bg-slate-700"
-                }`}
-              >
-                Week {w}
-              </button>
-            ))}
+  return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+
+      {/* Header */}
+      <h1 className="text-3xl font-bold">Training Cycle</h1>
+      <div className="flex gap-2">
+        {[1,2,3,4].map(w=>(
+          <button key={w} onClick={()=>setWeek(w)}
+            className={`flex-1 py-2 rounded-xl font-bold ${week===w?"bg-blue-600":"bg-slate-700"}`}>
+            Week {w}
+          </button>
+        ))}
+      </div>
+
+      {saveStatus && <div className="fixed top-4 right-4 bg-green-600 px-4 py-2 rounded-full">{saveStatus}</div>}
+
+      {/* Baseline Inputs - Week 1 */}
+      {week===1 && (
+        <div className="bg-slate-800 p-4 rounded-xl space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold">Enter Starting Weights</h2>
+            <button onClick={handleSave} className="bg-green-600 px-3 py-1 rounded">Save</button>
           </div>
 
-          {/* Week Title */}
-          <div className="bg-slate-800 p-4 rounded-xl">
-            <h2 className="text-xl font-bold">{data.title}</h2>
-          </div>
-
-          {/* Baseline Input – Week 1 Only */}
-          {week === 1 && (
-            <div className="bg-slate-800 p-4 rounded-xl space-y-3">
-              <h3 className="font-bold">Enter Starting Weights</h3>
-
-              {Object.keys(baseline).map(lift => (
-                <div key={lift} className="flex gap-2">
-                  <label className="w-28 capitalize">{lift}</label>
-                  <input
-                    type="number"
-                    placeholder="lbs"
-                    className="flex-1 bg-slate-900 p-2 rounded"
-                    value={baseline[lift]}
-                    onChange={e =>
-                      setBaseline({ ...baseline, [lift]: e.target.value })
-                    }
-                  />
+          <div className="flex flex-col md:flex-row gap-4">
+            {["his","hers"].map(g=>{
+              return (
+                <div key={g} className="bg-slate-700 p-3 rounded flex-1">
+                  <h3 className="capitalize font-bold mb-2">{g}</h3>
+                  {LIFTS.map(lift=>(
+                    <div key={lift} className="flex gap-2 mb-2 items-center">
+                      <label className="capitalize w-20">{lift}</label>
+                      <input type="number" placeholder="lbs"
+                        className="flex-1 p-2 rounded bg-slate-900"
+                        value={baseline[g][lift].weight}
+                        onChange={e=>{
+                          setBaseline({
+                            ...baseline,
+                            [g]:{...baseline[g],[lift]:{...baseline[g][lift],weight:e.target.value}}
+                          })
+                        }}
+                      />
+                      <input type="number" placeholder="reps"
+                        className="w-20 p-2 rounded bg-slate-900"
+                        value={baseline[g][lift].reps}
+                        onChange={e=>{
+                          setBaseline({
+                            ...baseline,
+                            [g]:{...baseline[g],[lift]:{...baseline[g][lift],reps:e.target.value}}
+                          })
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Monday Workout */}
-          <div className="bg-slate-800 p-4 rounded-xl">
-            <h3 className="font-bold mb-2">Monday</h3>
-            <ul className="list-disc list-inside text-sm">
-              {data.monday.map((ex, i) => (
-                <li key={i}>{ex}</li>
-              ))}
-            </ul>
+              )
+            })}
           </div>
-
-          {/* Weekly Schedule */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {["tuesday","wednesday","thursday","friday","saturday","sunday"].map(day => (
-              <div key={day} className="bg-slate-800 p-3 rounded">
-                <strong className="capitalize">{day}:</strong> {data[day]}
-              </div>
-            ))}
-          </div>
-
         </div>
-      );
-    }
+      )}
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+      {/* Targets for Week 2-4 */}
+      {week>1 && (
+        <div className="bg-slate-800 p-4 rounded-xl space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold">Target Weights</h2>
+          </div>
+
+          <div className="flex gap-4 flex-col md:flex-row">
+            {["his","hers"].map(g=>{
+              return (
+                <div key={g} className={`flex-1 ${activeGender===g?"block":"hidden"} md:block`}>
+                  <div className="flex justify-between mb-2">
+                    <h3 className={`capitalize font-bold ${g==="his"?"text-blue-400":"text-purple-400"}`}>{g}</h3>
+                    <div className="md:hidden flex gap-2">
+                      {["his","hers"].map(tg=>(
+                        <button key={tg} onClick={()=>setActiveGender(tg)}
+                          className={`py-1 px-2 rounded ${activeGender===tg?"bg-slate-700":"bg-slate-600"}`}>
+                          {tg}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {LIFTS.map(lift=>{
+                    const base = baseline[g][lift];
+                    if(!base.weight) return null;
+                    const prog = calculateProgression(base.weight,base.reps);
+                    return (
+                      <div key={lift} className="flex justify-between bg-slate-900/50 p-2 rounded mb-1">
+                        <span className="capitalize">{lift}</span>
+                        <div className="text-right">
+                          <div className="font-bold">{Math.round(prog.weight*multiplier)} lbs x {prog.reps}</div>
+                          <div className="text-xs italic">{week===4?"DELOAD":prog.note}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Monday Workout */}
+      <div className="bg-slate-800 p-4 rounded-xl">
+        <h3 className="font-bold mb-2">Monday</h3>
+        <ul className="list-disc list-inside text-sm">
+          {currentWeek.monday.length>0 ? currentWeek.monday.map((ex,i)=><li key={i}>{ex.name||ex}</li>) : LIFTS.map(l=> <li key={l}>{l}</li>)}
+        </ul>
+      </div>
+
+      {/* Tue–Sun Schedule */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        {["tuesday","wednesday","thursday","friday","saturday","sunday"].map(d=>(
+          <div key={d} className="bg-slate-800 p-3 rounded">
+            <strong className="capitalize">{d}:</strong> {currentWeek[d]}
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
 </body>
 </html>
